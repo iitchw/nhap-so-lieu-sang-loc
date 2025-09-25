@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHẦN MỀM NHẬP DỮ LIỆU KHÁM SÀNG LỌC</title>
+    <!-- Dexie.js - Thư viện cho IndexedDB -->
+    <script src="https://unpkg.com/dexie@3/dist/dexie.js"></script>
+    <!-- SheetJS - Thư viện để tạo file XLSX -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --card-bg: #ffffff; --body-bg: #f0f2f5; --border-color: #dee2e6; --text-color: #212529;
+            --muted-text-color: #6c757d; --primary-color: #0d6efd; --secondary-color: #6c757d;
+            --success-color: #198754; --danger-color: #dc3545; --warning-color: #ffc107;
+            --primary-text-color: #ffffff; --input-bg: #ffffff; --input-border: #ced4da; --header-bg: #f8f9fa;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: var(--body-bg); color: var(--text-color); margin: 0; font-size: 16px; }
+        .app-layout { display: flex; min-height: 100vh; }
+
+        /* Sidebar */
+        .sidebar { width: 280px; background-color: #fff; border-right: 1px solid var(--border-color); padding: 20px; display: flex; flex-direction: column; }
+        .sidebar h2 { font-size: 1.2rem; margin: 0 0 20px 0; text-align: center; text-transform: uppercase; font-weight: bold; }
+        .control-button { display: block; width: 100%; background-color: var(--header-bg); border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 15px; padding: 15px; text-align: left; cursor: pointer; font-size: 1rem; font-weight: 500; }
+        .control-button:hover { background-color: #e9ecef; }
+        .control-button .tooltip { font-size: 0.85rem; color: var(--muted-text-color); margin: 5px 0 0 0; font-weight: normal; }
+
+        /* Main Content */
+        .main-content { flex-grow: 1; padding: 20px; }
+        .main-header h1 { font-size: 1.8rem; margin: 0; text-align: center; line-height: 1.4; }
+        .card { border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 24px; background-color: var(--card-bg); }
+        .card-header { background-color: var(--header-bg); padding: 12px 16px; font-weight: bold; border-bottom: 1px solid var(--border-color); text-transform: uppercase; }
+        .card-content { padding: 20px; }
+        .grid-3-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+        .grid-full-width { grid-column: 1 / -1; }
+        .form-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;}
+        .form-group:last-child { margin-bottom: 0; }
+        input, select { font-weight: normal; }
+        input[type="text"], input[type="number"], input[type="tel"], input[type="date"], select { width: 100%; padding: 10px; border: 1px solid var(--input-border); border-radius: 4px; font-size: 1rem; box-sizing: border-box; }
+        .button { padding: 10px 16px; font-size: 1rem; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; text-align: center; }
+        .button-primary { background-color: var(--primary-color); color: var(--primary-text-color); }
+        .button-secondary { background-color: var(--secondary-color); color: var(--primary-text-color); }
+        .submit-button { width: 100%; padding: 16px; font-size: 1.2rem; }
+        .tab-nav { border-bottom: 2px solid var(--border-color); margin-bottom: 20px; display: flex; }
+        .tab-link { background-color: transparent; border: none; padding: 14px 20px; cursor: pointer; font-size: 1.1rem; font-weight: 500; color: var(--muted-text-color); border-bottom: 2px solid transparent; margin-bottom: -2px; }
+        .tab-link.active { color: var(--primary-color); border-bottom-color: var(--primary-color); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid var(--border-color); padding: 12px; text-align: left; }
+        th { background-color: var(--header-bg); text-transform: uppercase; font-weight: bold; }
+        .filter-row input { width: 95%; padding: 8px; }
+        .report-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .report-item { background: #fff; border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; text-align: center; }
+        .report-item .value { font-size: 2rem; font-weight: bold; color: var(--primary-color); }
+        .report-item .label { font-size: 1rem; color: var(--muted-text-color); margin-top: 5px; text-transform: uppercase; font-weight: bold; }
+        .hidden { display: none; }
+        @media (max-width: 992px) { .app-layout { flex-direction: column; } .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border-color); } }
+        .pl-6 { padding-left: 24px; margin-top: -10px; }
+        .border-l { border-left: 2px solid var(--border-color); padding-left: 24px; }
+        
+        label { text-transform: uppercase; font-weight: bold; }
+        
+        .checkbox-grid-2-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding-top: 8px; }
+        .checkbox-grid-2-cols label { font-weight: normal; }
+        
+        .radio-group-enhanced { display: flex; gap: 10px; flex-wrap: wrap; padding-top: 8px; }
+        .radio-group-enhanced input[type="radio"] { opacity: 0; position: fixed; width: 0; }
+        .radio-group-enhanced label { font-weight: normal; display: inline-block; padding: 10px 16px; border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; transition: all 0.2s ease-in-out; }
+        .radio-group-enhanced input[type="radio"]:checked + label { background-color: var(--primary-color); color: white; border-color: var(--primary-color); font-weight: bold; }
+        .radio-group-enhanced input[type="radio"]:focus + label { box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25); }
+
+        .validation-message { color: var(--danger-color); font-size: 0.9rem; font-weight: normal; margin-top: 4px; }
+        input.invalid, select.invalid { border-color: var(--danger-color); }
+
+        .spirometry-table { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; align-items: center; margin-top: 10px; }
+        .spirometry-table .header { font-weight: bold; text-align: center; }
+        .spirometry-table .label { font-weight: 500; }
+        .spirometry-table input { text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <h2>Bảng điều khiển</h2>
+            <button class="control-button" id="importDbBtn">
+                Nhập dữ liệu (json)
+                <p class="tooltip">Xóa dữ liệu hiện tại và thay thế bằng dữ liệu từ file backup.</p>
+            </button>
+            <input type="file" id="fileLoader" class="hidden" accept=".json">
+            <button class="control-button" id="exportDbBtn">
+                Sao lưu dữ liệu (json)
+                <p class="tooltip">Tạo một file backup chứa toàn bộ dữ liệu hiện tại.</p>
+            </button>
+            <button class="control-button" id="exportXlsxBtn">
+                Xuất danh sách (xlsx)
+                <p class="tooltip">Tạo một file Excel chứa danh sách bệnh nhân để báo cáo.</p>
+            </button>
+            <button class="control-button" id="clearDbBtn">
+                Xóa toàn bộ dữ liệu
+                <p class="tooltip">Xóa sạch CSDL trên trình duyệt này để bắt đầu lại từ đầu.</p>
+            </button>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="main-header">
+                <h1>PHẦN MỀM NHẬP DỮ LIỆU KHÁM SÀNG LỌC BỆNH HÔ HẤP<br>Bệnh viện Phổi thành phố Huế</h1>
+            </div>
+
+            <div id="appContainer">
+                <div class="tab-nav">
+                    <button class="tab-link active" data-tab="nhaplieu">📝 Nhập Liệu</button>
+                    <button class="tab-link" data-tab="danhsach">📋 Danh Sách</button>
+                    <button class="tab-link" data-tab="baocao">📊 Báo Cáo</button>
+                </div>
+
+                <div id="nhaplieu" class="tab-content active">
+                    <div id="formContainer">
+                        <div style="text-align: center; padding: 10px; background-color: #f1f3f5; border-radius: 8px 8px 0 0; border: 1px solid var(--border-color); border-bottom: none;">
+                            <h2 id="formTitle" style="margin:0; text-transform: uppercase;">PHIẾU KHÁM SÀNG LỌC CỘNG ĐỒNG</h2>
+                        </div>
+                        <form id="surveyForm" novalidate>
+                            <!-- I. Thông tin chung -->
+                            <div class="card" style="border-radius: 0; border-top:none; margin-bottom: 24px;">
+                                <div class="card-header">I. THÔNG TIN CHUNG</div>
+                                <div class="card-content grid-3-cols">
+                                    <div class="form-group"><label for="patientId">1. MÃ SỐ BỆNH NHÂN</label><input type="text" id="patientId" name="patientId" readonly></div>
+                                    <div class="form-group"><label for="examDate">2.1. NGÀY KHÁM</label><input type="date" id="examDate" name="examDate" required><div class="validation-message"></div></div>
+                                    <div class="form-group"><label for="location">2.2. NƠI KHÁM</label><select id="location" name="location" required><option value="" disabled selected>CHỌN NƠI KHÁM</option><option value="Cơ sở 1">TYT Chân Mây cơ sở 1 - Lộc Vĩnh</option><option value="Cơ sở 2">TYT Chân Mây cơ sở 2 - Lăng Cô</option><option value="Cơ sở 3">TYT Chân Mây cơ sở 3 - Lộc Tiến</option><option value="Cơ sở 4">TYT Chân Mây cơ sở 4 - Lộc Thuỷ</option></select><div class="validation-message"></div></div>
+                                    <div class="form-group grid-full-width"><label for="fullName">3. HỌ VÀ TÊN</label><input type="text" id="fullName" name="fullName" required><div class="validation-message"></div></div>
+                                    <div class="form-group"><label for="phone">4. SỐ ĐIỆN THOẠI</label><input type="tel" id="phone" name="phone" pattern="[0-9]{10}"><div class="validation-message"></div></div>
+                                    <div class="form-group"><label for="birthYear">5. NĂM SINH</label><input type="number" id="birthYear" name="birthYear" required min="1900"><div class="validation-message"></div></div>
+                                    <div class="form-group"><label for="address">6. ĐỊA CHỈ THÔN</label><input type="text" id="address" name="address" required><div class="validation-message"></div></div>
+                                    <div class="form-group grid-full-width"><label class="form-label">7. GIỚI TÍNH</label><div class="radio-group-enhanced"><input type="radio" name="gender" value="Nam" id="gender_male" required><label for="gender_male">Nam</label><input type="radio" name="gender" value="Nữ" id="gender_female"><label for="gender_female">Nữ</label></div><div class="validation-message"></div></div>
+                                    <div class="form-group grid-full-width hidden" id="isPregnantSection"><label class="form-label">7.1. BẠN CÓ ĐANG MANG THAI KHÔNG?</label><div class="radio-group-enhanced"><input type="radio" name="isPregnant" value="Có" id="preg_yes"><label for="preg_yes">Có</label><input type="radio" name="isPregnant" value="Không" id="preg_no"><label for="preg_no">Không</label></div><div class="validation-message"></div></div>
+                                </div>
+                            </div>
+                            <!-- II. Tiền sử -->
+                            <div class="card"><div class="card-header">II. TIỀN SỬ</div><div class="card-content"><div class="form-group"><label class="form-label">8. TIỀN SỬ BẢN THÂN</label><div class="checkbox-grid-2-cols"><label><input type="checkbox" name="personalHistory" value="Lao" id="historyTb"> LAO</label><label><input type="checkbox" name="personalHistory" value="BPTNMT"> BPTNMT</label><label><input type="checkbox" name="personalHistory" value="HPQ"> HPQ</label></div></div><div class="form-group hidden pl-6" id="tuberculosisTreatmentsSection"><label for="tuberculosisTreatments">8.1. SỐ LẦN ĐIỀU TRỊ LAO</label><input type="number" id="tuberculosisTreatments" name="tuberculosisTreatments" min="0"><div class="validation-message"></div></div><div class="form-group"><label class="form-label">9. TIỀN SỬ TIẾP XÚC NGƯỜI BỆNH LAO</label><div class="radio-group-enhanced"><input type="radio" name="contactWithTuberculosis" value="Có" id="contact_yes" required><label for="contact_yes">Có</label><input type="radio" name="contactWithTuberculosis" value="Không" id="contact_no"><label for="contact_no">Không</label></div><div class="validation-message"></div></div><div class="hidden pl-6" id="contactSourceSection"><div class="form-group"><label for="contactSourceName">9.1. HỌ VÀ TÊN NGƯỜI TIẾP XÚC</label><input type="text" id="contactSourceName" name="contactSourceName"><div class="validation-message"></div></div><div class="form-group"><label class="form-label">9.2. LOẠI LAO CỦA NGUỒN TIẾP XÚC</label><div class="radio-group-enhanced"><input type="radio" name="contactSourceTbType" value="Lao nhạy cảm" id="tbtype_sensitive"><label for="tbtype_sensitive">Lao nhạy cảm</label><input type="radio" name="contactSourceTbType" value="Lao kháng thuốc" id="tbtype_resistant"><label for="tbtype_resistant">Lao kháng thuốc</label></div><div class="validation-message"></div></div></div></div></div>
+                            <!-- III. Khám sàng lọc -->
+                            <div class="card"><div class="card-header">III. KHÁM SÀNG LỌC</div><div class="card-content"><div class="form-group"><label for="xrayResult">10. KẾT QUẢ CHỤP X-QUANG</label><select id="xrayResult" name="xrayResult" required><option value="" disabled selected>CHỌN KẾT QUẢ</option><option value="Bình thường">Bình thường</option><option value="Bất thường nghi lao">Bất thường nghi lao</option><option value="Bất thường nghi BPTNMT&HPQ">Bất thường nghi BPTNMT&HPQ</option><option value="Bất thường khác">Bất thường khác</option><option value="KHÔNG CHỤP">KHÔNG CHỤP</option></select><div class="validation-message"></div></div><div class="form-group"><label class="form-label">11. CÁC DẤU HIỆU NGHI LAO</label><div class="checkbox-grid-2-cols"><label><input type="checkbox" name="suspectedTbSigns" value="Ho kéo dài"> HO KÉO DÀI</label><label><input type="checkbox" name="suspectedTbSigns" value="Sụt cân"> SỤT CÂN</label><label><input type="checkbox" name="suspectedTbSigns" value="Sốt"> SỐT</label><label><input type="checkbox" name="suspectedTbSigns" value="Ra mồ hôi trộm về đêm"> RA MỒ HÔI TRỘM VỀ ĐÊM</label></div></div><div class="form-group"><label class="form-label">12. DẤU HIỆU GỢI Ý HEN PHẾ QUẢN</label><div class="checkbox-grid-2-cols"><label><input type="checkbox" name="suggestiveAsthmaSigns" value="Khó thở khò khè"> KHÓ THỞ, KHÒ KHÈ, THỞ RÍT</label><label><input type="checkbox" name="suggestiveAsthmaSigns" value="Tiền sử cơn hen"> TIỀN SỬ CƠN KHÓ THỞ KIỂU HEN</label><label><input type="checkbox" name="suggestiveAsthmaSigns" value="Tiền sử dị ứng bản thân"> TIỀN SỬ BẢN THÂN DỊ ỨNG</label><label><input type="checkbox" name="suggestiveAsthmaSigns" value="Tiền sử dị ứng gia đình"> TIỀN SỬ GIA ĐÌNH DỊ ỨNG/HEN</label><label><input type="checkbox" name="suggestiveAsthmaSigns" value="Thời điểm xuất hiện cơn"> CƠN KHÓ THỞ VỀ ĐÊM/THEO MÙA</label><label><input type="checkbox" name="suggestiveAsthmaSigns" value="Giảm triệu chứng khi điều trị"> GIẢM TRIỆU CHỨNG KHI DÙNG THUỐC</label></div></div><div class="form-group"><label class="form-label">13. DẤU HIỆU GỢI Ý BPTNMT</label><div class="checkbox-grid-2-cols"><label><input type="checkbox" name="suggestiveCopdSigns" value="Tuổi ≥ 40"> TUỔI ≥ 40</label><label><input type="checkbox" name="suggestiveCopdSigns" value="Hút thuốc"> HÚT THUỐC LÁ, THUỐC LÀO</label><label><input type="checkbox" name="suggestiveCopdSigns" value="Tiếp xúc khói bếp"> TIẾP XÚC KHÓI BẾP, RƠM RẠ</label><label><input type="checkbox" name="suggestiveCopdSigns" value="Tiếp xúc bụi hóa chất"> TIẾP XÚC BỤI, HÓA CHẤT</label><label><input type="checkbox" name="suggestiveCopdSigns" value="Khó thở nặng dần"> KHÓ THỞ NẶNG DẦN</label><label><input type="checkbox" name="suggestiveCopdSigns" value="Ho kéo dài"> HO KÉO DÀI</label><label><input type="checkbox" name="suggestiveCopdSigns" value="Khạc đờm mạn tính"> KHẠC ĐỜM MẠN TÍNH</label></div></div></div></div>
+                            <!-- IV. Xét nghiệm -->
+                            <div class="card"><div class="card-header">IV. XÉT NGHIỆM</div><div class="card-content"><div class="grid-3-cols"><div class="form-group"><label class="form-label">14. XÉT NGHIỆM XPERT</label><div class="radio-group-enhanced"><input type="radio" name="xpertTest" value="Có" id="xpert_yes" required><label for="xpert_yes">Có</label><input type="radio" name="xpertTest" value="Không" id="xpert_no"><label for="xpert_no">Không</label></div><div class="validation-message"></div></div><div class="form-group grid-full-width hidden" id="xpertResultSection"><label for="xpertResult">14.1. KẾT QUẢ XPERT</label><select id="xpertResult" name="xpertResult"><option value="" disabled selected>CHỌN KẾT QUẢ</option><option value="CHỜ NHẬP SAU">CHỜ NHẬP SAU</option><option value="MTB âm">MTB âm</option><option value="MTB dương không kháng Rifampicin">MTB dương không kháng Rifampicin</option><option value="MTB dương KHÁNG Rifampicin">MTB dương KHÁNG Rifampicin</option><option value="MTB dương vết">MTB dương vết</option><option value="Lỗi">Lỗi</option><option value="Khác">Khác</option></select><div class="validation-message"></div></div><div class="form-group"><label class="form-label">15. ĐO CHỨC NĂNG HÔ HẤP</label><div class="radio-group-enhanced"><input type="radio" name="spirometryTest" value="Có" id="spiro_yes" required><label for="spiro_yes">Có</label><input type="radio" name="spirometryTest" value="Không" id="spiro_no"><label for="spiro_no">Không</label></div><div class="validation-message"></div></div></div><div class="hidden" id="spirometryResultsSection" style="margin-top:20px;"><label class="form-label">15.1. KẾT QUẢ ĐO CHỨC NĂNG HÔ HẤP</label><div class="spirometry-table"><div class="header">CHỈ SỐ</div><div class="header">DỰ ĐOÁN</div><div class="header">TRƯỚC TEST</div><div class="header">SAU TEST</div><div class="label">FEV1</div><input type="number" step="0.01" name="fev1_predicted" required><input type="number" step="0.01" name="fev1_pre" required><input type="number" step="0.01" name="fev1_post"><div class="label">FVC</div><input type="number" step="0.01" name="fvc_predicted" required><input type="number" step="0.01" name="fvc_pre" required><input type="number" step="0.01" name="fvc_post"><div class="label">FEV1/FVC (%)</div><input type="number" step="0.1" name="fev1_fvc_ratio_predicted" required><input type="number" step="0.1" name="fev1_fvc_ratio_pre" required><input type="number" step="0.1" name="fev1_fvc_ratio_post"></div></div></div></div>
+                            <!-- V. Chẩn đoán -->
+                            <div class="card"><div class="card-header">V. CHẨN ĐOÁN</div><div class="card-content"><div class="form-group"><label class="form-label">16. KẾT LUẬN</label><div class="radio-group-enhanced"><input type="radio" name="conclusion" value="Bình thường" id="con_normal" required><label for="con_normal">Bình thường</label><input type="radio" name="conclusion" value="Bất thường" id="con_abnormal"><label for="con_abnormal">Bất thường</label></div><div class="validation-message"></div></div><div class="hidden border-l" id="diagnosisDetailsSection" style="margin-top:20px;"><h4 style="margin-top:0; text-transform:uppercase;">CHI TIẾT CHẨN ĐOÁN BẤT THƯỜNG:</h4><div class="grid-2-cols"><div class="form-group"><label class="form-label">17. CHẨN ĐOÁN BPTNMT</label><div class="radio-group-enhanced"><input type="radio" name="diagnosisCopd" value="Có" id="copd_yes"><label for="copd_yes">Có</label><input type="radio" name="diagnosisCopd" value="Không" id="copd_no"><label for="copd_no">Không</label></div><div class="validation-message"></div></div><div class="form-group"><label class="form-label">18. CHẨN ĐOÁN HEN PHẾ QUẢN</label><div class="radio-group-enhanced"><input type="radio" name="diagnosisAsthma" value="Có" id="asthma_yes"><label for="asthma_yes">Có</label><input type="radio" name="diagnosisAsthma" value="Không" id="asthma_no"><label for="asthma_no">Không</label></div><div class="validation-message"></div></div><div class="form-group"><label class="form-label">19. CHẨN ĐOÁN LAO</label><div class="radio-group-enhanced"><input type="radio" name="diagnosisTb" value="Có" id="tb_yes"><label for="tb_yes">Có</label><input type="radio" name="diagnosisTb" value="Không" id="tb_no"><label for="tb_no">Không</label></div><div class="validation-message"></div></div><div class="form-group hidden" id="diagnosisTbTypeSection"><label for="diagnosisTbType">19.1. LOẠI CHẨN ĐOÁN LAO</label><select id="diagnosisTbType" name="diagnosisTbType"><option value="" disabled selected>CHỌN LOẠI CHẨN ĐOÁN</option><option value="CHỜ NHẬP SAU">CHỜ NHẬP SAU</option><option value="Lao phổi có bằng chứng VK">Lao phổi có bằng chứng VK</option><option value="Lao phổi không có bằng chứng VK">Lao phổi không có bằng chứng VK</option><option value="Lao kháng thuốc">Lao kháng thuốc</option><option value="Lao ngoài phổi">Lao ngoài phổi</option></select><div class="validation-message"></div></div><div class="form-group"><label class="form-label">20. CHẨN ĐOÁN BỆNH KHÁC</label><div class="radio-group-enhanced"><input type="radio" name="diagnosisOther" value="Có" id="other_yes"><label for="other_yes">Có</label><input type="radio" name="diagnosisOther" value="Không" id="other_no"><label for="other_no">Không</label></div><div class="validation-message"></div></div><div class="form-group hidden" id="diagnosisOtherDetailSection"><label for="diagnosisOtherDetail">20.1. VUI LÒNG GHI RÕ BỆNH KHÁC</label><input type="text" id="diagnosisOtherDetail" name="diagnosisOtherDetail"><div class="validation-message"></div></div></div></div></div></div>
+
+                            <button type="submit" class="button button-primary submit-button" id="submitBtn">Lưu Dữ Liệu</button>
+                            <button type="button" class="button button-secondary submit-button hidden" id="cancelEditBtn" style="margin-top:10px;">Hủy Chỉnh Sửa</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div id="danhsach" class="tab-content">
+                    <div class="card">
+                        <div class="card-header">DANH SÁCH BỆNH NHÂN (HIỂN THỊ 10 PHIẾU GẦN NHẤT)</div>
+                        <div style="overflow-x:auto;">
+                            <table>
+                                <thead>
+                                    <tr><th>MÃ BN</th><th>HỌ TÊN</th><th>KẾT QUẢ XQUANG</th><th>XN XPERT</th><th>CHẨN ĐOÁN</th><th>THAO TÁC</th></tr>
+                                    <tr class="filter-row">
+                                        <td><input type="text" data-filter="patientId" placeholder="Lọc..."></td>
+                                        <td><input type="text" data-filter="fullName" placeholder="Lọc..."></td>
+                                        <td><input type="text" data-filter="xrayResult" placeholder="Lọc..."></td>
+                                        <td><input type="text" data-filter="xpertTest" placeholder="Lọc..."></td>
+                                        <td><input type="text" data-filter="diagnosis" placeholder="Lọc..."></td>
+                                        <td></td>
+                                    </tr>
+                                </thead>
+                                <tbody id="surveyListBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="baocao" class="tab-content">
+                     <div id="reportContainer"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+    // --- DATABASE SETUP (INDEXEDDB WITH DEXIE.JS) ---
+    const db = new Dexie('PhanMemKhamSangLocDB');
+    db.version(1).stores({
+        surveys: '&patientId, fullName, xrayResult, xpertTest'
+    });
+
+    // --- STATE & GLOBAL VARIABLES ---
+    let editingPatientId = null;
+
+    // --- UI ELEMENT REFERENCES ---
+    const form = document.getElementById('surveyForm');
+    const fileLoader = document.getElementById('fileLoader');
+    const surveyListBody = document.getElementById('surveyListBody');
+    const submitBtn = document.getElementById('submitBtn');
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+    const formTitle = document.getElementById('formTitle');
+    const tabLinks = document.querySelectorAll('.tab-link');
+    const tabContents = document.querySelectorAll('.tab-content');
+    const reportContainer = document.getElementById('reportContainer');
+
+    // --- FORM LOGIC (Conditional Fields with Cleanup) ---
+    const genderRadios=document.querySelectorAll('input[name="gender"]');const historyTbCheckbox=document.getElementById('historyTb');const contactRadios=document.querySelectorAll('input[name="contactWithTuberculosis"]');const xpertTestRadios=document.querySelectorAll('input[name="xpertTest"]');const spirometryTestRadios=document.querySelectorAll('input[name="spirometryTest"]');const conclusionRadios=document.querySelectorAll('input[name="conclusion"]');const diagnosisTbRadios=document.querySelectorAll('input[name="diagnosisTb"]');const diagnosisOtherRadios=document.querySelectorAll('input[name="diagnosisOther"]');const isPregnantSection=document.getElementById('isPregnantSection');const tuberculosisTreatmentsSection=document.getElementById('tuberculosisTreatmentsSection');const contactSourceSection=document.getElementById('contactSourceSection');const xpertResultSection=document.getElementById('xpertResultSection');const spirometryResultsSection=document.getElementById('spirometryResultsSection');const diagnosisDetailsSection=document.getElementById('diagnosisDetailsSection');const diagnosisTbTypeSection=document.getElementById('diagnosisTbTypeSection');const diagnosisOtherDetailSection=document.getElementById('diagnosisOtherDetailSection');
+    function setRequired(section, required){section.querySelectorAll("input, select").forEach(el=>{if(!el.name.endsWith('_post'))el.required=required})}
+    function toggleIsPregnant(){const isFemale="Nữ"===document.querySelector('input[name="gender"]:checked')?.value;isPregnantSection.classList.toggle("hidden",!isFemale);setRequired(isPregnantSection,isFemale);if(!isFemale){document.querySelectorAll('input[name="isPregnant"]').forEach(radio=>radio.checked=false)}}
+    function toggleTbTreatments(){const hasTbHistory=historyTbCheckbox.checked;tuberculosisTreatmentsSection.classList.toggle("hidden",!hasTbHistory);setRequired(tuberculosisTreatmentsSection,hasTbHistory);if(!hasTbHistory){document.getElementById('tuberculosisTreatments').value=''}}
+    function toggleContactSource(){const hasContact="Có"===document.querySelector('input[name="contactWithTuberculosis"]:checked')?.value;contactSourceSection.classList.toggle("hidden",!hasContact);setRequired(contactSourceSection,hasContact);if(!hasContact){document.getElementById('contactSourceName').value='';document.querySelectorAll('input[name="contactSourceTbType"]').forEach(radio=>radio.checked=false)}}
+    function toggleXpertResult(){const hasXpertTest="Có"===document.querySelector('input[name="xpertTest"]:checked')?.value;xpertResultSection.classList.toggle("hidden",!hasXpertTest);setRequired(xpertResultSection,hasXpertTest);if(!hasXpertTest){document.getElementById('xpertResult').value=''}}
+    function toggleSpirometryResults(){const hasSpiroTest="Có"===document.querySelector('input[name="spirometryTest"]:checked')?.value;spirometryResultsSection.classList.toggle("hidden",!hasSpiroTest);setRequired(spirometryResultsSection,hasSpiroTest);if(!hasSpiroTest){spirometryResultsSection.querySelectorAll('input[type="number"]').forEach(input=>input.value='')}}
+    function toggleDiagnosisDetails(){const isAbnormal="Bất thường"===document.querySelector('input[name="conclusion"]:checked')?.value;diagnosisDetailsSection.classList.toggle("hidden",!isAbnormal);setRequired(diagnosisDetailsSection,isAbnormal);if(!isAbnormal){diagnosisDetailsSection.querySelectorAll('input[type="radio"]').forEach(r=>r.checked=false);diagnosisDetailsSection.querySelectorAll('select, input[type="text"]').forEach(el=>el.value='');diagnosisTbTypeSection.classList.add("hidden");diagnosisOtherDetailSection.classList.add("hidden")}}
+    function toggleDiagnosisTbType(){const hasTbDiagnosis="Có"===document.querySelector('input[name="diagnosisTb"]:checked')?.value;diagnosisTbTypeSection.classList.toggle("hidden",!hasTbDiagnosis);setRequired(diagnosisTbTypeSection,hasTbDiagnosis);if(!hasTbDiagnosis){document.getElementById('diagnosisTbType').value=''}}
+    function toggleDiagnosisOtherDetail(){const hasOtherDiagnosis="Có"===document.querySelector('input[name="diagnosisOther"]:checked')?.value;diagnosisOtherDetailSection.classList.toggle("hidden",!hasOtherDiagnosis);setRequired(diagnosisOtherDetailSection,hasOtherDiagnosis);if(!hasOtherDiagnosis){document.getElementById('diagnosisOtherDetail').value=''}}
+    genderRadios.forEach(r=>r.addEventListener("change",toggleIsPregnant));historyTbCheckbox.addEventListener("change",toggleTbTreatments);contactRadios.forEach(r=>r.addEventListener("change",toggleContactSource));xpertTestRadios.forEach(r=>r.addEventListener("change",toggleXpertResult));spirometryTestRadios.forEach(r=>r.addEventListener("change",toggleSpirometryResults));conclusionRadios.forEach(r=>r.addEventListener("change",toggleDiagnosisDetails));diagnosisTbRadios.forEach(r=>r.addEventListener("change",toggleDiagnosisTbType));diagnosisOtherRadios.forEach(r=>r.addEventListener("change",toggleDiagnosisOtherDetail));
+
+    // --- APP INITIALIZATION & CONTROL ---
+    async function initializeApp() {
+        if (navigator.storage && navigator.storage.persist) {
+            try {
+                const isPersisted = await navigator.storage.persisted();
+                if (!isPersisted) { await navigator.storage.persist(); }
+            } catch (error) { console.error("Lỗi khi yêu cầu lưu trữ bền vững:", error); }
+        }
+
+        const count = await db.surveys.count();
+        if (count > 0) {
+            if (!confirm(`Phát hiện có ${count} phiếu trong CSDL. Bạn muốn tiếp tục làm việc với dữ liệu này không?\n\n(Chọn 'Cancel' để xóa dữ liệu cũ và tạo mới)`)) {
+                if (confirm('BẠN CÓ CHẮC CHẮN MUỐN XÓA VĨNH VIỄN TOÀN BỘ DỮ LIỆU HIỆN CÓ KHÔNG?')) {
+                    await db.surveys.clear();
+                    alert('Đã xóa dữ liệu cũ. Bắt đầu phiên làm việc mới.');
+                }
+            }
+        } else {
+            alert('Chào mừng! Cơ sở dữ liệu của bạn đang trống. Hãy bắt đầu nhập liệu hoặc sử dụng chức năng "Nhập dữ liệu" từ sidebar.');
+        }
+        await updateAllViews();
+        await resetForm();
+    }
+    initializeApp();
+
+    // --- SIDEBAR CONTROLS ---
+    document.getElementById('importDbBtn').addEventListener('click', () => fileLoader.click());
+    fileLoader.addEventListener('change', async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        if (!confirm('Hành động này sẽ XÓA SẠCH dữ liệu hiện tại và thay thế bằng dữ liệu từ file. Bạn có chắc chắn muốn tiếp tục?')) {
+            fileLoader.value = ''; return;
+        }
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                if (Array.isArray(data)) {
+                    await db.transaction('rw', db.surveys, async () => {
+                        await db.surveys.clear();
+                        await db.surveys.bulkAdd(data);
+                    });
+                    alert(`Đã nhập thành công ${data.length} phiếu.`);
+                    await updateAllViews();
+                } else { alert('Lỗi: Tệp không hợp lệ.'); }
+            } catch (error) { alert('Lỗi đọc file: ' + error.message); }
+        };
+        reader.readAsText(file);
+        fileLoader.value = '';
+    });
+
+    document.getElementById('clearDbBtn').addEventListener('click', async () => {
+        if (confirm('!!! CẢNH BÁO !!!\nBạn có chắc chắn muốn XÓA TOÀN BỘ CƠ SỞ DỮ LIỆU không? Hành động này không thể hoàn tác.')) {
+            await db.surveys.clear();
+            alert('Đã xóa toàn bộ dữ liệu.');
+            await updateAllViews();
+        }
+    });
+
+    // --- TAB SWITCHING LOGIC ---
+    tabLinks.forEach(link => link.addEventListener('click', () => openTab(link.dataset.tab)));
+    function openTab(tabId) {
+        tabLinks.forEach(link => link.classList.remove('active'));
+        tabContents.forEach(content => content.classList.remove('active'));
+        document.querySelector(`.tab-link[data-tab="${tabId}"]`).classList.add('active');
+        document.getElementById(tabId).classList.add('active');
+    }
+
+    // --- VALIDATION LOGIC ---
+    function validateForm() {
+        let isValid = true;
+        document.querySelectorAll('[required]').forEach(el => {
+            const messageDiv = el.closest('.form-group').querySelector('.validation-message');
+            let isFieldValid = true;
+
+            if (el.type === 'radio') {
+                const radioGroup = document.querySelectorAll(`input[name="${el.name}"]`);
+                if (![...radioGroup].some(r => r.checked)) {
+                    isFieldValid = false;
+                }
+            } else {
+                if (!el.value.trim()) {
+                    isFieldValid = false;
+                }
+            }
+
+            if (!isFieldValid) {
+                isValid = false;
+                el.classList.add('invalid');
+                if(messageDiv) messageDiv.textContent = 'Vui lòng điền thông tin này.';
+            } else {
+                el.classList.remove('invalid');
+                if(messageDiv) messageDiv.textContent = '';
+            }
+        });
+        return isValid;
+    }
+    form.addEventListener('input', (event) => {
+        if (event.target.hasAttribute('required')) {
+            event.target.classList.remove('invalid');
+            const messageDiv = event.target.closest('.form-group').querySelector('.validation-message');
+            if (messageDiv) messageDiv.textContent = '';
+        }
+    });
+
+
+    // --- DATA HANDLING & RENDERING ---
+    async function updateAllViews() {
+        await filterAndRenderList();
+        await generateReport();
+    }
+    
+    async function generateUniquePatientId() {
+        let newId, exists;
+        do {
+            newId = `${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+            exists = await db.surveys.get(newId);
+        } while (exists);
+        return newId;
+    }
+
+    async function resetForm() {
+        form.reset();
+        document.querySelectorAll('.invalid').forEach(el => el.classList.remove('invalid'));
+        document.querySelectorAll('.validation-message').forEach(el => el.textContent = '');
+        document.getElementById('patientId').value = await generateUniquePatientId();
+        document.getElementById('examDate').valueAsDate = new Date();
+        document.getElementById('birthYear').max = new Date().getFullYear();
+        editingPatientId = null;
+        submitBtn.textContent = 'Lưu Dữ Liệu';
+        cancelEditBtn.classList.add('hidden');
+        formTitle.textContent = 'PHIẾU KHÁM SÀNG LỌC CỘNG ĐỒNG';
+        document.querySelectorAll('input[type="radio"], input[type="checkbox"]').forEach(el => el.dispatchEvent(new Event('change')));
+    }
+
+    function getDiagnosisString(survey) {
+        if (!survey) return '';
+        const diagnoses = [];
+        if (survey.diagnosisTb === 'Có') diagnoses.push(survey.diagnosisTbType || 'Lao');
+        if (survey.diagnosisCopd === 'Có') diagnoses.push('BPTNMT');
+        if (survey.diagnosisAsthma === 'Có') diagnoses.push('HPQ');
+        if (survey.diagnosisOther === 'Có' && survey.diagnosisOtherDetail) diagnoses.push(survey.diagnosisOtherDetail);
+        return diagnoses.join(', ') || (survey.conclusion === 'Bình thường' ? 'Bình thường' : 'Bất thường');
+    }
+
+    async function filterAndRenderList() {
+        let collection = db.surveys.toCollection();
+        const filters = {};
+        document.querySelectorAll('.filter-row input').forEach(input => {
+            if (input.value) filters[input.dataset.filter] = input.value.toLowerCase();
+        });
+
+        let filteredSurveys = await collection.toArray();
+        if (Object.keys(filters).length > 0) {
+            filteredSurveys = filteredSurveys.filter(survey => {
+                return Object.keys(filters).every(key => {
+                    if (key === 'diagnosis') return getDiagnosisString(survey).toLowerCase().includes(filters[key]);
+                    const surveyValue = survey[key] || '';
+                    return surveyValue.toString().toLowerCase().includes(filters[key]);
+                });
+            });
+        }
+
+        const recentData = filteredSurveys.reverse().slice(0, 10);
+        surveyListBody.innerHTML = recentData.map(survey => `
+            <tr>
+                <td>${survey.patientId || ''}</td>
+                <td>${survey.fullName || ''}</td>
+                <td>${survey.xrayResult || ''}</td>
+                <td>${survey.xpertTest || ''}</td>
+                <td>${getDiagnosisString(survey)}</td>
+                <td class="action-buttons">
+                    <button class="button button-warning" data-id="${survey.patientId}">Sửa</button>
+                    <button class="button button-danger" data-id="${survey.patientId}">Xóa</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+    document.querySelectorAll('.filter-row input').forEach(input => input.addEventListener('keyup', filterAndRenderList));
+
+    async function populateFormForEdit(patientId) {
+        const data = await db.surveys.get(patientId);
+        if (!data) {
+            alert('Không tìm thấy dữ liệu cho bệnh nhân này.');
+            return;
+        }
+        
+        await resetForm();
+        editingPatientId = patientId;
+
+        for (const key in data) {
+            if (form.elements[key]) {
+                const elements = form.elements[key];
+                if (elements.constructor === RadioNodeList) {
+                    const targetRadio = document.querySelector(`input[name="${key}"][value="${data[key]}"]`);
+                    if (targetRadio) targetRadio.checked = true;
+                } else if (elements.type === 'checkbox' || (elements.length > 0 && elements[0].type === 'checkbox')) {
+                    if (Array.isArray(data[key])) {
+                        data[key].forEach(value => {
+                            const chk = document.querySelector(`input[name="${key}"][value="${value}"]`);
+                            if (chk) chk.checked = true;
+                        });
+                    } else { elements.checked = data[key]; }
+                } else {
+                    elements.value = data[key] || '';
+                }
+            }
+        }
+        document.querySelectorAll('input[type="radio"], input[type="checkbox"]').forEach(el => el.dispatchEvent(new Event('change')));
+        submitBtn.textContent = 'Cập nhật Dữ liệu';
+        cancelEditBtn.classList.remove('hidden');
+        formTitle.textContent = `CHỈNH SỬA PHIẾU: ${data.fullName}`;
+        window.scrollTo(0, 0);
+    }
+    
+    // --- REPORTING LOGIC ---
+    async function generateReport() {
+        const allData = await db.surveys.toArray();
+        if (allData.length === 0) {
+            reportContainer.innerHTML = '<p style="text-align:center; color: var(--muted-text-color);">CHƯA CÓ DỮ LIỆU ĐỂ TẠO BÁO CÁO.</p>';
+            return;
+        }
+        const total=allData.length; const totalNam=allData.filter(p=>p.gender==='Nam').length; const totalNu=allData.filter(p=>p.gender==='Nữ').length; const hasXquang=allData.filter(p=>p.xrayResult&&p.xrayResult!=='KHÔNG CHỤP').length; const hasXpert=allData.filter(p=>p.xpertTest==='Có').length; const hasSpiro=allData.filter(p=>p.spirometryTest==='Có').length; const diagnosisLao=allData.filter(p=>p.diagnosisTb==='Có').length; const diagnosisCopd=allData.filter(p=>p.diagnosisCopd==='Có').length; const diagnosisAsthma=allData.filter(p=>p.diagnosisAsthma==='Có').length; const diagnosisOther=allData.filter(p=>p.diagnosisOther==='Có').length;
+        const createReportItem=(v,l)=>`<div class="report-item"><div class="value">${v}</div><div class="label">${l}</div></div>`;
+        reportContainer.innerHTML = `<div class="report-grid">${createReportItem(total,'TỔNG SỐ NGƯỜI KHÁM')}${createReportItem(totalNam,'TỔNG SỐ NAM')}${createReportItem(totalNu,'TỔNG SỐ NỮ')}${createReportItem(hasXquang,'SỐ NGƯỜI CÓ CHỤP XQUANG')}${createReportItem(hasXpert,'SỐ NGƯỜI CÓ XN XPERT')}${createReportItem(hasSpiro,'SỐ NGƯỜI CÓ ĐO CNHH')}${createReportItem(diagnosisLao,'CHẨN ĐOÁN LAO')}${createReportItem(diagnosisCopd,'CHẨN ĐOÁN BPTNMT')}${createReportItem(diagnosisAsthma,'CHẨN ĐOÁN HEN PHẾ QUẢN')}${createReportItem(diagnosisOther,'CHẨN ĐOÁN KHÁC')}</div>`;
+    }
+
+    // --- EVENT HANDLERS ---
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!validateForm()) {
+            alert('Vui lòng điền đầy đủ các thông tin bắt buộc được đánh dấu đỏ.');
+            return;
+        }
+
+        const formData = new FormData(form);
+        const data = {};
+        for (const key of new Set([...formData.keys()])) {
+            const elements = form.elements[key];
+            if (elements.length > 1 && elements[0].type === 'checkbox') {
+                data[key] = formData.getAll(key);
+            } else { data[key] = formData.get(key); }
+        }
+        
+        if (data.conclusion === 'Bất thường' && data.diagnosisCopd === 'Không' && data.diagnosisAsthma === 'Không' && data.diagnosisTb === 'Không' && data.diagnosisOther === 'Không') {
+            alert("Tất cả các chẩn đoán chi tiết đều là 'Không'. Kết luận chung sẽ được tự động cập nhật thành 'Bình thường' để đảm bảo tính nhất quán.");
+            data.conclusion = 'Bình thường';
+            document.getElementById('con_normal').checked = true;
+        }
+        
+        try {
+            await db.surveys.put(data);
+            alert(editingPatientId ? `Đã cập nhật thành công cho bệnh nhân ${data.fullName}.` : `Đã lưu thành công bệnh nhân ${data.fullName}.`);
+            await updateAllViews();
+            await resetForm();
+            openTab('danhsach');
+        } catch (error) {
+            alert('Lỗi khi lưu dữ liệu: ' + error);
+        }
+    });
+    
+    cancelEditBtn.addEventListener('click', () => resetForm());
+
+    surveyListBody.addEventListener('click', async (event) => {
+        const target = event.target;
+        if (target.tagName !== 'BUTTON') return;
+        const patientId = target.dataset.id;
+        
+        if (target.textContent === 'Sửa') {
+            await populateFormForEdit(patientId);
+            openTab('nhaplieu');
+        } else if (target.textContent === 'Xóa') {
+            const patientToDelete = await db.surveys.get(patientId);
+            if (confirm(`Bạn có chắc chắn muốn xóa bệnh nhân "${patientToDelete.fullName}"?`)) {
+                await db.surveys.delete(patientId);
+                await updateAllViews();
+                if(editingPatientId === patientId) await resetForm();
+            }
+        }
+    });
+
+    // --- DATA EXPORT LOGIC ---
+    function downloadFile(filename, content, mimeType) {
+        const a = document.createElement('a'); const blob = new Blob([content], { type: mimeType });
+        a.href = URL.createObjectURL(blob); a.download = filename; a.click(); URL.revokeObjectURL(a.href);
+    }
+    document.getElementById('exportDbBtn').addEventListener('click', async () => {
+        const allData = await db.surveys.toArray();
+        if (allData.length === 0) return alert('Không có dữ liệu để sao lưu.');
+        const filename = `backup_data_${new Date().toISOString().slice(0,10)}.json`;
+        downloadFile(filename, JSON.stringify(allData, null, 2), 'application/json');
+    });
+    document.getElementById('exportXlsxBtn').addEventListener('click', async () => {
+        const allData = await db.surveys.toArray();
+        if (allData.length === 0) return alert('Không có dữ liệu để xuất.');
+        const worksheet = XLSX.utils.json_to_sheet(allData); const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "DanhSach");
+        XLSX.writeFile(workbook, `DanhSach_${new Date().toISOString().slice(0,10)}.xlsx`);
+    });
+});
+</script>
+</body>
+</html>```
