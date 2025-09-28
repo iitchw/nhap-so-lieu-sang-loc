@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hướng Dẫn Sử Dụng Phần Mềm</title>
+    <style>
+        :root {
+            --body-bg: #f0f2f5; --border-color: #dee2e6; --text-color: #212529;
+            --primary-color: #0d6efd; --danger-color: #dc3545; --header-bg: #f8f9fa;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--body-bg); color: var(--text-color); margin: 0; padding: 20px;
+        }
+        .container { max-width: 900px; margin: 0 auto; background-color: #fff; border: 1px solid var(--border-color); border-radius: 8px; }
+        .header { padding: 20px; text-align: center; border-bottom: 1px solid var(--border-color); background-color: var(--header-bg); }
+        .header h1 { margin: 0; font-size: 1.8rem; }
+        .content { padding: 25px 30px; }
+        .content h4 { margin-top: 25px; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 8px; font-size: 1.2rem; }
+        .content h4:first-child { margin-top: 0; }
+        .content p, .content li { line-height: 1.7; font-size: 1.05rem; }
+        .content ul { padding-left: 25px; }
+        .content strong { color: var(--primary-color); }
+        .content code { background-color: #e9ecef; padding: 2px 6px; border-radius: 4px; font-family: Consolas, monaco, monospace; }
+        .content .warning { color: var(--danger-color); font-weight: bold; }
+        .back-button {
+            display: inline-block; margin-top: 20px; padding: 12px 20px; background-color: var(--primary-color);
+            color: #fff; text-decoration: none; border-radius: 6px; font-weight: bold; transition: background-color 0.2s;
+        }
+        .back-button:hover { background-color: #0b5ed7; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Hướng Dẫn Sử Dụng Chi Tiết</h1>
+        </div>
+        <div class="content">
+            <h4>I. KHỞI ĐỘNG VÀ LÀM QUEN VỚI PHẦN MỀM</h4>
+            <p>Khi mới mở, phần mềm sẽ tự động kiểm tra xem đã có dữ liệu nào được lưu trên máy tính này hay chưa. Sẽ có hai tình huống xảy ra:</p>
+            <ul>
+                <li><strong>Tình huống 1: Cơ sở dữ liệu trống (Lần đầu sử dụng)</strong>
+                    <p>Một thông báo sẽ hiện ra: <em>"Chào mừng! Cơ sở dữ liệu của bạn đang trống..."</em>. Bạn chỉ cần nhấn <strong>"OK"</strong> để bắt đầu làm việc.</p>
+                </li>
+                <li><strong>Tình huống 2: Đã có dữ liệu từ các phiên làm việc trước đó</strong>
+                    <p>Khi phần mềm tìm thấy dữ liệu bạn hoặc người khác đã nhập trước đó trên máy tính này. Một thông báo sẽ hiện ra, ví dụ: <em>"Phát hiện có 50 phiếu trong CSDL. Bạn muốn tiếp tục làm việc với dữ liệu này không?"</em>. Bạn có hai lựa chọn:</p>
+                    <ul>
+                        <li>Nhấn <strong>"OK"</strong>: Để tiếp tục làm việc với dữ liệu đã có (xem, sửa, nhập thêm). Đây là lựa chọn thông thường.</li>
+                        <li>Nhấn <strong>"Cancel"</strong>: <span class="warning">CẨN TRỌNG!</span> Lựa chọn này dùng để xóa toàn bộ dữ liệu cũ và bắt đầu lại từ đầu. <ul><li>Phần mềm sẽ hỏi lại một lần nữa để chắc chắn: <strong>"BẠN CÓ CHẮC CHẮN MUỐN XÓA VĨNH VIỄN TOÀN BỘ DỮ LIỆU HIỆN CÓ KHÔNG?"</strong></li><li>Nếu bạn tiếp tục nhấn <strong>"OK"</strong>, toàn bộ dữ liệu cũ sẽ bị xóa mất và không thể khôi phục.</li> <li><strong><span class="warning">Chỉ làm điều này khi bạn chắc chắn không cần đến dữ liệu cũ nữa.</span></strong></li></ul></li>
+                    </ul>
+                </li>
+            </ul>
+
+            <h4>II. HƯỚNG DẪN NHẬP PHIẾU KHÁM MỚI (Thẻ "📝 Nhập Liệu")</h4>
+            <p>Đây là nơi bạn điền thông tin cho từng bệnh nhân. Giao diện được thiết kế giống hệt một phiếu khám giấy.</p>
+            <ol>
+                <li><strong>Chuẩn bị phiếu trống:</strong> Phần mềm luôn có sẵn một phiếu trống khi bạn mở thẻ này hoặc sau khi bạn vừa lưu một bệnh nhân.</li>
+                <li><strong>Điền thông tin:</strong> Lần lượt điền thông tin từ trên xuống dưới. Các ô <code>Họ và tên</code>, <code>Địa chỉ thôn</code>, và <code>Họ tên người tiếp xúc</code> sẽ tự động được viết IN HOA.</li>
+                <li><strong>Kiểm tra và Lưu phiếu:</strong> Sau khi điền xong, nhấn nút <strong>"Lưu Dữ Liệu"</strong>. Nếu có thông tin bắt buộc bị thiếu, các ô đó sẽ được hiển thị một thông báo màu đỏ để bạn bổ sung dữ liệu.</li>
+            </ol>
+
+            <h4>III. QUẢN LÝ DANH SÁCH BỆNH NHÂN (Thẻ "📋 Danh Sách")</h4>
+            <p>Đây là nơi bạn xem lại toàn bộ các phiếu đã nhập.</p>
+            <ul>
+                <li><strong>Xem và Di chuyển trang:</strong> Dùng các nút <strong>"Trước"</strong>, <strong>"Sau"</strong> và các số trang ở cuối bảng để xem danh sách.</li>
+                <li><strong>Tìm kiếm và Lọc:</strong> Gõ thông tin cần tìm vào các ô trống nằm ngay dưới hàng tiêu đề để lọc danh sách một cách nhanh chóng.</li>
+                <li><strong>Chỉnh sửa và Xóa:</strong> Sử dụng các nút <strong>"Sửa"</strong> (màu vàng) và <strong>"Xóa"</strong> (màu đỏ) ở cột cuối cùng để quản lý từng phiếu.</li>
+            </ul>
+
+            <h4>IV. XEM BÁO CÁO THỐNG KÊ (Thẻ "📊 Báo Cáo")</h4>
+            <p>Thẻ này tự động tổng hợp toàn bộ dữ liệu đã nhập thành các báo cáo thống kê trực quan theo 5 phần: Báo cáo chung, X-quang, GeneXpert, Đo CNHH, và Chẩn đoán.</p>
+
+            <h4>V. CÁC CHỨC NĂNG QUẢN LÝ DỮ LIỆU NÂNG CAO (Bảng điều khiển bên trái)</h4>
+            <ul>
+                <li><strong>Sao lưu dữ liệu (json):</strong> <span class="warning">QUAN TRỌNG NHẤT!</span> Hãy thực hiện vào cuối mỗi ngày làm việc. Chức năng này tải về một tệp tin dạng <strong>"backup_data_2025-09-28.json"</strong> để bạn lưu trữ, Chọn <strong>"SAVE AS"</strong> và tìm đến nơi để lưu file. Hãy lưu tệp này vào nơi an toàn trên máy tính hoặc gửi qua Zalo cho chính bạn để lưu trữ an toàn.</li>
+                <li><strong>Nhập dữ liệu (json):</strong> Dùng để phục hồi dữ liệu từ tệp sao lưu hoặc chuyển dữ liệu sang máy tính khác. <ul><li><span class="warning">Lưu ý:</span> Một thông báo sẽ hiện ra cảnh báo rằng hành động này sẽ XÓA SẠCH dữ liệu hiện có. Hãy chắc chắn bạn đã sao lưu dữ liệu cũ nếu cần.</li></ul></li>
+                <li><strong>Xuất danh sách (xlsx):</strong> Xuất toàn bộ dữ liệu ra file Excel để in ấn hoặc báo cáo.</li>
+                <li><strong>Xóa toàn bộ dữ liệu:</strong> <span class="warning">KHÔNG THỂ HOÀN TÁC!</span> Chỉ sử dụng khi bạn chắc chắn muốn xóa sạch mọi thứ để bắt đầu lại phiên làm việc hoàn toàn mới. Phần mềm sẽ yêu cầu bạn xác nhận 2 lần vì dữ liệu đã xóa sẽ mất vĩnh viễn</li>
+            </ul>
+             <h4>VI. LƯU Ý QUAN TRỌNG & CÁC TÌNH HUỐNG CẦN BIẾT</h4>
+            <ul>
+                <li><strong>Tại sao không thấy dữ liệu đã nhập trước đó?</strong> Hãy chắc chắn đã sử dụng đúng trình duyệt web <strong>(Chrome - Edge - Firefox)</strong> mà bạn đã nhập dữ liệu trước đó. <span class="warning">Tuyệt đối không dùng chức năng Xoá dữ liệu khi chưa sao lưu dữ liệu hiện tại.</span></li>
+                <li><strong>Làm sao để chuyển dữ liệu sang máy khác?</strong>
+                    <ol>
+                        <li>Tại <strong>máy cũ</strong>, dùng chức năng <strong>"Sao lưu dữ liệu"</strong>.</li>
+                        <li>Chuyển tệp vừa tải sang <strong>máy mới</strong>.</li>
+                        <li>Tại <strong>máy mới</strong>, dùng chức năng <strong>"Nhập dữ liệu"</strong>.</li>
+                    </ol>
+                </li>
+                <li><strong class="warning">TUYỆT ĐỐI KHÔNG XÓA LỊCH SỬ TRÌNH DUYỆT WEB!</strong> Nếu bạn xóa "Dữ liệu trang web" hoặc "Cookies", toàn bộ dữ liệu của phần mềm sẽ bị xóa mất.</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
